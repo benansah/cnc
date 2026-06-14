@@ -12,21 +12,32 @@ export function formatCurrency(amount: number, currency = "GH₵"): string {
   })}`;
 }
 
-export function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString("en-NG", {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  // Treat plain date strings (YYYY-MM-DD) as local to avoid UTC-offset shifting
+  const normalized =
+    typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? date + "T00:00:00"
+      : date;
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GH", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 }
 
-export function formatTime(time: string): string {
-  const [hours, minutes] = time.split(":");
-  const hour = parseInt(hours);
+export function formatTime(time: string | null | undefined): string {
+  if (!time) return "—";
+  // Accept "HH:MM", "HH:MM:SS", or a full ISO string
+  const timePart = time.includes("T") ? time.split("T")[1] : time;
+  const [h, m] = timePart.split(":");
+  const hour = parseInt(h, 10);
+  if (isNaN(hour)) return "—";
   const ampm = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 || 12;
-  return `${displayHour}:${minutes} ${ampm}`;
+  return `${displayHour}:${m} ${ampm}`;
 }
 
 export function generateSeatLayout(rows: number, columns: number): string[] {

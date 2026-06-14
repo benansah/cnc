@@ -47,16 +47,16 @@ export interface SeatLayout {
 // Booking Types
 export interface Booking {
   id: string;
-  user_id: string;
+  user_id?: string;
   schedule_id: string;
   passenger_email: string;
   passenger_name: string;
   passenger_phone: string;
-  seats: string[]; // e.g., ["1A", "2B"]
+  seats: string[];
   total_price: number;
   payment_reference?: string;
   payment_status: "pending" | "completed" | "failed";
-  booking_date: string;
+  booking_date?: string;
   created_at: string;
   schedule?: BusSchedule;
 }

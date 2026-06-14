@@ -3,17 +3,15 @@ import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    glass?: boolean;
-  }
+  React.HTMLAttributes<HTMLDivElement> & { glass?: boolean }
 >(({ className, glass, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border shadow-sm",
+      "rounded-2xl border bg-white text-[#202124]",
       glass
-        ? "bg-white/30 backdrop-blur-md border-white/20"
-        : "bg-card text-card-foreground border-border",
+        ? "bg-white/40 backdrop-blur-md border-white/30 shadow-lg"
+        : "border-[#E5E7EB] shadow-card",
       className
     )}
     {...props}
@@ -39,7 +37,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h2
     ref={ref}
-    className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+    className={cn("text-xl font-bold leading-tight tracking-tight text-[#202124]", className)}
     {...props}
   />
 ));
@@ -51,7 +49,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("text-sm text-[#5F6368] leading-relaxed", className)}
     {...props}
   />
 ));

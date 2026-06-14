@@ -88,19 +88,22 @@ export async function getAvailableSchedules(
         .eq("from_location", fromLocation)
         .eq("to_location", toLocation);
 
-      if (routes && routes.length > 0) {
-        query = query.in(
-          "route_id",
-          routes.map((r) => r.id)
-        );
+      // No matching route → return empty immediately
+      if (!routes || routes.length === 0) {
+        return { success: true, data: [] as BusSchedule[] };
       }
+
+      query = query.in(
+        "route_id",
+        routes.map((r) => r.id)
+      );
     }
 
     if (departureDate) {
       query = query.eq("departure_date", departureDate);
     }
 
-    const { data, error } = await query.order("departure_time", {
+    const { data, error } = await query.order("departure_date", {
       ascending: true,
     });
 
@@ -162,6 +165,7 @@ export async function createBooking(bookingData: {
         seats: bookingData.seats,
         total_price: totalPrice,
         payment_status: "pending",
+        booking_date: new Date().toISOString().split("T")[0],
       })
       .select();
 

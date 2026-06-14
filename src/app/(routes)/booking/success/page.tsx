@@ -13,8 +13,15 @@ import {
 import { TicketComponent } from "@/components/tickets/ticket";
 import { Booking, BusSchedule } from "@/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheckCircle, faHome } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCheckCircle,
+  faHome,
+  faExclamationTriangle,
+} from "@fortawesome/free-solid-svg-icons";
+import { faBus } from "@fortawesome/free-solid-svg-icons";
 import { Toaster } from "sonner";
+import Image from "next/image";
+import Link from "next/link";
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -34,161 +41,102 @@ function PaymentSuccessContent() {
   });
 
   useEffect(() => {
-    // If booking is literally the string "undefined", clean the URL and show friendly message
     if (bookingId === "undefined") {
       const params = new URLSearchParams(window.location.search);
       params.delete("booking");
       const newQuery = params.toString();
-      const newUrl = window.location.pathname + (newQuery ? `?${newQuery}` : "");
-      try {
-        router.replace(newUrl);
-      } catch {
-        // ignore replace errors
-      }
-      // Defer state updates to avoid synchronous setState inside effect
-      setTimeout(() => {
-        setFetchError("Missing booking reference.");
-        setLoading(false);
-      }, 0);
+      try { router.replace(window.location.pathname + (newQuery ? `?${newQuery}` : "")); } catch { }
+      setTimeout(() => { setFetchError("Missing booking reference."); setLoading(false); }, 0);
       return;
     }
 
-    // Validate bookingId is a proper UUID before attempting fetch
     const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (success !== "true" || !bookingId || !uuidV4.test(bookingId)) {
       if (bookingId && !uuidV4.test(bookingId)) {
-        setTimeout(() => {
-          setFetchError("Invalid booking reference.");
-          setLoading(false);
-        }, 0);
+        setTimeout(() => { setFetchError("Invalid booking reference."); setLoading(false); }, 0);
       }
       return;
     }
 
     let isCancelled = false;
-
     const loadBooking = async () => {
       try {
         const response = await fetch(`/api/bookings/${bookingId}`);
         const json = await response.json();
-
-        if (!response.ok || !json.success) {
-          throw new Error(json.error || "Unable to load booking details.");
-        }
-
-        if (!isCancelled) {
-          setBooking(json.data);
-        }
-      } catch (fetchError) {
-        console.error(fetchError);
-        if (!isCancelled) {
-          setFetchError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Failed to load booking details."
-          );
-        }
+        if (!response.ok || !json.success) throw new Error(json.error || "Unable to load booking details.");
+        if (!isCancelled) setBooking(json.data);
+      } catch (err) {
+        console.error(err);
+        if (!isCancelled) setFetchError(err instanceof Error ? err.message : "Failed to load booking details.");
       } finally {
-        if (!isCancelled) {
-          setLoading(false);
-        }
+        if (!isCancelled) setLoading(false);
       }
     };
-
     loadBooking();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [success, bookingId, router]);
+
+  const nav = (
+    <header className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3">
+          <Image src="/cnc_logo.png" alt="C&C Transport" width={40} height={40} className="object-contain" />
+          <div className="leading-tight">
+            <span className="block text-[10px] font-bold uppercase tracking-[0.25em] text-[#425066]">C&C Transport</span>
+            <span className="block text-sm font-bold text-[#425066]">Campus Bus Booking</span>
+          </div>
+        </Link>
+      </div>
+    </header>
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <Card className="glass">
-          <CardContent className="p-8">
-            <p className="text-lg text-gray-600">Loading payment status...</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-[#F8F9FA]">
+        {nav}
         <Toaster />
-      </div>
-    );
-  }
-
-  if (fetchError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 sm:p-6 lg:p-8">
-        <Toaster />
-        <div className="max-w-2xl mx-auto">
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="text-red-600">Unable to Load Booking</CardTitle>
-              <CardDescription>
-                We could not retrieve your booking details.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">{fetchError}</p>
-                <p className="text-gray-600 mb-6">
-                  If your payment was completed, please check your email or contact support.
-                </p>
-              </div>
-              <div className="flex gap-4">
-                <Button
-                  onClick={() => router.push("/booking")}
-                  className="flex-1"
-                  variant="outline"
-                >
-                  Back to Booking
-                </Button>
-                <Button
-                  onClick={() => router.push("/")}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                >
-                  <FontAwesomeIcon icon={faHome} className="mr-2" />
-                  Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#425066]" />
+            <p className="text-sm text-[#80868B]">Loading payment status…</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (fetchError || error) {
+    const title = fetchError ? "Unable to Load Booking" : "Payment Failed";
+    const message = fetchError
+      ? fetchError
+      : `Error: ${error}. Please try again or contact support if the issue persists.`;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-[#F8F9FA]">
+        {nav}
         <Toaster />
-        <div className="max-w-2xl mx-auto">
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="text-red-600">Payment Failed</CardTitle>
-              <CardDescription>
-                There was an issue processing your payment
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Error: {error}</p>
-                <p className="text-gray-600 mb-6">
-                  Please try booking again or contact support if the issue persists.
-                </p>
+        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+          <Card className="animate-fade-in">
+            <CardContent className="p-8 text-center space-y-5">
+              <div className="mx-auto h-16 w-16 rounded-full bg-[#FCE8E6] flex items-center justify-center text-[#EA4335]">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="h-7 w-7" />
               </div>
-              <div className="flex gap-4">
-                <Button
-                  onClick={() => router.push("/booking")}
-                  className="flex-1"
-                  variant="outline"
-                >
-                  Back to Booking
+              <div>
+                <h2 className="text-xl font-bold text-[#425066]">{title}</h2>
+                <p className="mt-2 text-sm text-[#425066]">{message}</p>
+                {fetchError && (
+                  <p className="mt-2 text-sm text-[#425066]">
+                    If your payment completed, check your email or contact{" "}
+                    <a href="mailto:support@ccbooking.com" className="text-[#425066] hover:underline">support@ccbooking.com</a>.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button variant="outline" onClick={() => router.push("/booking")} className="sm:w-44">
+                  Try Again
                 </Button>
-                <Button
-                  onClick={() => router.push("/")}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                >
-                  <FontAwesomeIcon icon={faHome} className="mr-2" />
+                <Button onClick={() => router.push("/")} className="sm:w-44">
+                  <FontAwesomeIcon icon={faHome} className="mr-2 h-3.5 w-3.5" />
                   Home
                 </Button>
               </div>
@@ -200,79 +148,64 @@ function PaymentSuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F8F9FA]">
+      {nav}
       <Toaster />
-      <div className="max-w-4xl mx-auto">
-        {/* Success Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
-              <FontAwesomeIcon
-                icon={faCheckCircle}
-                className="text-green-600 text-4xl"
-              />
-            </div>
+
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Success header */}
+        <div className="text-center mb-10 animate-fade-in">
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#E6F4EA]">
+            <FontAwesomeIcon icon={faCheckCircle} className="h-10 w-10 text-[#34A853]" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Payment Successful!
-          </h1>
-          <p className="text-xl text-gray-600">
-            Your bus ticket booking has been confirmed
-          </p>
+          <h1 className="text-3xl font-bold text-[#425066]">Payment Successful!</h1>
+          <p className="mt-2 text-[#425066]">Your bus ticket booking has been confirmed.</p>
         </div>
 
         {/* Ticket */}
         {booking ? (
-          <div className="mb-8">
+          <div className="mb-6 animate-fade-in">
             <TicketComponent
               booking={booking}
               ticketNumber={`TICKET-${booking.id.substring(0, 8).toUpperCase()}`}
             />
           </div>
         ) : (
-          <Card className="glass mb-8">
-            <CardContent className="p-8 text-center text-gray-600">
-              <p>Booking details will be loaded shortly...</p>
+          <Card className="mb-6">
+            <CardContent className="p-8 text-center text-[#425066]">
+              <p>Booking details will be loaded shortly…</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Next Steps */}
-        <Card className="glass">
+        {/* What's next */}
+        <Card className="mb-6 animate-fade-in">
           <CardHeader>
             <CardTitle>What&apos;s Next?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ol className="list-decimal list-inside space-y-3 text-gray-700">
-              <li>Check your email for the booking confirmation and ticket</li>
-              <li>Arrive at the bus station 30 minutes before departure</li>
-              <li>Present your ticket number for check-in</li>
+            <ol className="list-decimal list-inside space-y-2.5 text-sm text-[#425066]">
+              <li>Check your email for the booking confirmation and ticket.</li>
+              <li>Arrive at the bus station at least 15 minutes before departure.</li>
+              <li>Present your ticket number for check-in.</li>
               <li>Enjoy your journey with C&C Transport!</li>
             </ol>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-              <p className="text-blue-900 font-medium mb-2">💡 Tip</p>
-              <p className="text-blue-800 text-sm">
-                Save your booking confirmation email for your records. You&apos;ll need your ticket number for check-in.
+            <div className="rounded-xl border border-[#c5cdd9] bg-[#f5f7fa] p-4 mt-5">
+              <p className="text-sm font-semibold text-[#425066] mb-1">Tip</p>
+              <p className="text-sm text-[#425066]">
+                Save your booking confirmation email. You'll need your ticket number for check-in.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Button
-            onClick={() => router.push("/")}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg h-12"
-          >
-            <FontAwesomeIcon icon={faHome} className="mr-2" />
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button onClick={() => router.push("/")} className="flex-1 h-12 text-base">
+            <FontAwesomeIcon icon={faHome} className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
-          <Button
-            onClick={() => router.push("/booking")}
-            variant="outline"
-            className="flex-1 text-lg h-12"
-          >
+          <Button variant="outline" onClick={() => router.push("/booking")} className="flex-1 h-12 text-base">
             Book Another Trip
           </Button>
         </div>
@@ -283,7 +216,13 @@ function PaymentSuccessContent() {
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#425066]" />
+        </div>
+      }
+    >
       <PaymentSuccessContent />
     </Suspense>
   );
